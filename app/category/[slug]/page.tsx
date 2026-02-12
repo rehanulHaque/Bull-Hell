@@ -6,9 +6,6 @@ export default async function Page({params}: {params: Promise<{slug: string}>}) 
   const slug = (await params).slug;
 
   // ✅ Filter Products By Category
-  const filteredProducts = products.filter(
-    (item) => item.category.toLowerCase() === slug.toLowerCase()
-  );
 
   return (
     <section className="w-full bg-gray-50 min-h-screen">
@@ -43,12 +40,12 @@ export default async function Page({params}: {params: Promise<{slug: string}>}) 
 
           {/* Product Count */}
           <div className="text-gray-500 text-sm">
-            {filteredProducts.length} Products Found
+            {products.length} Products Found
           </div>
         </div>
 
         {/* Empty State */}
-        {filteredProducts.length === 0 ? (
+        {products.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-lg p-10 text-center">
             <h2 className="text-2xl font-semibold text-gray-800 mb-3">
               No Products Available 😢
@@ -68,7 +65,7 @@ export default async function Page({params}: {params: Promise<{slug: string}>}) 
           <>
             {/* Products Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {filteredProducts.map((item) => (
+              {products.map((item) => (
                 <ProductCard key={item.id} {...item} />
               ))}
             </div>
