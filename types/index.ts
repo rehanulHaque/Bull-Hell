@@ -4,8 +4,10 @@ export interface ProductTypes{
     description: string;
     image: string;
     price: number;
+    originalPrice: number;
+    rating: number;
+    reviews: number;
     link: string;
-    category: string;
 }
 
 export interface CategoriesTypes {

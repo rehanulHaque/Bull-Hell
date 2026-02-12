@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id        String   @id @default(uuid())
+
+  title     String
+  image     String
+
+  /// slug (ex: "shirts", "shoes")
+  category  String   @unique
+
+  // Relation: One Category → Many Products
+  products  Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id            String   @id @default(uuid())
+
+  title         String
+  description   String
+
+  image         String
+
+  price         Float
+  originalPrice Float
+
+  rating        Float
+  reviews       Int
+
+  link          String
+
+  // Relation Field
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

@@ -1,29 +1,47 @@
 "use client";
 
-import Image from "next/image";
+import ProductCard from "../ProductCard";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import axios from "axios";
+import { ProductTypes } from "@/types";
 
 export default function NewArrivals() {
-  const products = [
-    { img: "/banner-1.jpg", title: "Polo Shirt", category: "T-Shirt", price: 100 },
-    { img: "/banner-2.jpg", title: "Casual Hoodie", category: "Winter Wear", price: 120 },
-    { img: "/banner-3.jpg", title: "Denim Jacket", category: "Jacket", price: 180 },
-    { img: "/banner-1.jpg", title: "Sneakers", category: "Shoes", price: 90 },
-    { img: "/banner-2.jpg", title: "Formal Shirt", category: "Office Wear", price: 110 },
-    { img: "/banner-3.jpg", title: "Jeans Pant", category: "Denim", price: 150 },
-  ];
-
+  const [products, setProducts] = useState<ProductTypes[]>([]);
   const [index, setIndex] = useState(0);
-  const [itemsPerView, setItemsPerView] = useState(4);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Responsive Items Per Screen
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get("/api/products");
+      setProducts(response.data);
+    } catch (error: any) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const [itemsPerView, setItemsPerView] = useState(4);
+  const [showArrows, setShowArrows] = useState(true);
+
+  const newArrivals = products.slice(0, 6);
+
+  // ✅ Responsive Setup
   useEffect(() => {
     const updateView = () => {
-      if (window.innerWidth < 640) setItemsPerView(1); // mobile
-      else if (window.innerWidth < 1024) setItemsPerView(2); // tablet
-      else setItemsPerView(4); // desktop
+      if (window.innerWidth < 640) {
+        setItemsPerView(2); // Mobile = 2 cards
+        setShowArrows(false); // No arrows on mobile
+      } else {
+        setItemsPerView(4); // Desktop = 4 cards
+        setShowArrows(true);
+      }
     };
 
     updateView();
@@ -32,9 +50,9 @@ export default function NewArrivals() {
     return () => window.removeEventListener("resize", updateView);
   }, []);
 
-  const maxIndex = products.length - itemsPerView;
+  const maxIndex = newArrivals.length - itemsPerView;
 
-  // Move One Item At A Time
+  // Slide Controls
   const nextSlide = () => {
     if (index < maxIndex) setIndex(index + 1);
   };
@@ -43,76 +61,112 @@ export default function NewArrivals() {
     if (index > 0) setIndex(index - 1);
   };
 
+  // Total Dots
+  const totalDots = maxIndex + 1;
+
   return (
-    <div className="w-full py-10 px-2">
-      {/* Heading */}
-      <h1 className="font-bold text-3xl text-center mb-8">
-        New Arrivals
-      </h1>
+    <section className="w-full py-8 px-4 bg-gray-50">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-10">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+            New Arrivals
+          </h2>
+          <p className="text-gray-600 mt-2">
+            Discover the latest additions to our collection
+          </p>
+        </div>
 
-      {/* Slider Wrapper */}
-      <div className="relative w-full overflow-hidden">
-        {/* Track */}
-        <motion.div
-          className="flex gap-2"
-          animate={{
-            x: `-${index * (100 / itemsPerView)}%`,
-          }}
-          transition={{ duration: 0.5 }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          onDragEnd={(e, info) => {
-            if (info.offset.x < -80) nextSlide();
-            if (info.offset.x > 80) prevSlide();
-          }}
-        >
-          {products.map((item, i) => (
-            <div
-              key={i}
-              className="shrink-0 border border-slate-200 bg-white"
-              style={{
-                width: `${98 / itemsPerView}%`,
-              }}
-            >
-              {/* Image (No Rounded) */}
-              <Image
-                src={item.img}
-                alt={item.title}
-                width={500}
-                height={500}
-                className="w-full h-100 object-cover"
+        {/* Slider Wrapper */}
+        <div className="relative w-full overflow-hidden">
+          {/* Track */}
+          <motion.div
+            className="flex gap-3 sm:gap-6"
+            animate={{
+              x: `-${index * (100 / itemsPerView)}%`,
+            }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={(e, info) => {
+              if (info.offset.x < -80) nextSlide();
+              if (info.offset.x > 80) prevSlide();
+            }}
+          >
+            {/* ✅ Skeleton Loading */}
+            {loading &&
+              Array.from({ length: itemsPerView }).map((_, i) => (
+                <div
+                  key={i}
+                  className="shrink-0"
+                  style={{
+                    width: `calc(${100 / itemsPerView}% - 12px)`,
+                  }}
+                >
+                  <div className="h-80 bg-gray-200 animate-pulse border border-gray-300" />
+                </div>
+              ))}
+
+            {/* ✅ Real Products */}
+            {!loading &&
+              newArrivals.map((item) => (
+                <div
+                  key={item.id}
+                  className="shrink-0"
+                  style={{
+                    width: `calc(${100 / itemsPerView}% - 12px)`,
+                  }}
+                >
+                  <ProductCard {...item} variant="slider" />
+                </div>
+              ))}
+          </motion.div>
+
+          {/* ✅ Arrows ONLY on Desktop */}
+          {showArrows && !loading && (
+            <>
+              {/* Left Arrow */}
+              <button
+                onClick={prevSlide}
+                disabled={index === 0}
+                className="absolute top-1/2 left-2 -translate-y-1/2 
+                bg-white border shadow-md p-2 rounded-full
+                hover:bg-blue-600 hover:text-white
+                disabled:opacity-40 transition z-10"
+              >
+                <ArrowLeft size={20} />
+              </button>
+
+              {/* Right Arrow */}
+              <button
+                onClick={nextSlide}
+                disabled={index === maxIndex}
+                className="absolute top-1/2 right-2 -translate-y-1/2 
+                bg-white border shadow-md p-2 rounded-full
+                hover:bg-blue-600 hover:text-white
+                disabled:opacity-40 transition z-10"
+              >
+                <ArrowRight size={20} />
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* ✅ Dot Indicators */}
+        {!loading && (
+          <div className="flex justify-center gap-2 mt-6">
+            {Array.from({ length: totalDots }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIndex(i)}
+                className={`w-2.5 h-2.5 rounded-full transition ${
+                  i === index ? "bg-blue-600 scale-125" : "bg-gray-300"
+                }`}
               />
-
-              {/* Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-lg">{item.title}</h3>
-                <p className="text-slate-500">{item.category}</p>
-                <p className="font-bold mt-2">${item.price}</p>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* Left Arrow */}
-        <button
-          onClick={prevSlide}
-          disabled={index === 0}
-          className="absolute top-1/2 left-2 -translate-y-1/2 
-          bg-black/50 text-white px-3 py-2 disabled:opacity-30"
-        >
-          <ArrowLeft/>
-        </button>
-
-        {/* Right Arrow */}
-        <button
-          onClick={nextSlide}
-          disabled={index === maxIndex}
-          className="absolute top-1/2 right-2 -translate-y-1/2 
-          bg-black/50 text-white px-3 py-2 disabled:opacity-30"
-        >
-          <ArrowRight/>
-        </button>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
